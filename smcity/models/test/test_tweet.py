@@ -1,11 +1,13 @@
 ''' Unit tests for the tweets model and factory. '''
 
+import datetime
 import logging
+import time
 
 from boto.dynamodb2.table import Table
 from ConfigParser import ConfigParser
 
-from smcity.models.tweet import TweetFactory
+from smcity.models.tweet import TweetFactory, TweetJanitor
 
 logger = logging.getLogger(__name__)
 
@@ -212,3 +214,52 @@ class TestTweetFactory:
             num_tweets += 1
             assert tweet.message() == 'message' + str(num_tweets), tweet.message()
         assert num_tweets == 2, num_tweets
+
+class TestTweetJanitor:
+    ''' Unit tests for the TweetJanitor class. '''
+
+    def setup(self):
+        ''' Set up before each test. '''
+        logger.info('Setting up the test tweets table...')
+        self.table = Table('test_tweets')
+
+        logger.info('Setting up the TweetFactory instance...')
+        config = ConfigParser()
+        config.add_section('database')
+        config.set('database', 'max_tweet_age', '1')
+        config.set('database', 'tweets_table', 'test_tweets')
+        self.tweet_factory = TweetFactory(config)
+
+        logger.info('Setting up the TweetJanitor instance...')
+        self.tweet_janitor = TweetJanitor(config)
+
+        logger.info('Emptying the contents of the test tweets table...')
+        for tweet in self.table.scan():
+            tweet.delete()
+
+    def teardown(self):
+        self.tweet_janitor.shutdown()
+
+    def test_maintain_tweets(self):
+        ''' Tests the maintain_tweets routine. '''
+        logger.info('Setting up test data...')
+        self.tweet_factory.create_tweet('user1', 'message', 'city', '2013-01-01 01:01:01', 0, 0)
+        self.tweet_factory.create_tweet('user2', 'message', 'city', '2013-01-10 01:01:01', 0, 0)
+        self.tweet_factory.create_tweet('user3', 'message', 'city', '2013-01-30 01:01:01', 0, 0)
+        self.tweet_factory.create_tweet('user4', 'message', 'city',
+            datetime.datetime.fromtimestamp(time.time()-3601).strftime('%Y-%m-%d %H:%M:%S'), 0, 0)
+        self.tweet_factory.create_tweet('user5', 'message', 'city', 
+            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), 0, 0)
+        self.tweet_factory.create_tweet('user6', 'message', 'city', '2020-01-01 01:01:01', 0, 0)
+
+        logger.info('Spinning up the clean up routine...')
+        self.tweet_janitor.maintain_tweets()
+        time.sleep(5) # Wait a second to let the janitor do its work
+
+        logger.info('Verify that the tweets were deleted as expected...')
+        expected_tweets = ['user5', 'user6']
+        current_tweet = 0
+        tweets = self.tweet_factory.get_tweets('city')
+        for tweet in tweets:
+            assert tweet.user() == expected_tweets[current_tweet], tweet.user()
+            current_tweet += 1

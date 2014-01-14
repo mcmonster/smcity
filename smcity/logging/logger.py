@@ -19,37 +19,37 @@ class Logger:
         self.hostname = subprocess.check_output(
             'ec2metadata --instance-id', shell=True
         ).rstrip()
-        self.module = module
+        self.logger = logging.getLogger(module)
 
     def debug(self, message, *args):
         ''' Logs debug level messages. '''
         if len(args) > 0:
-            logging.debug(self.hostname + ' ' + str(self.module) + ' ' + message, *args)
+            self.logger.debug(self.hostname + ' ' + message, *args)
         else:
-            logging.debug(self.hostname + ' ' + str(self.module) + ' ' + message)
+            self.logger.debug(self.hostname + ' ' + message)
 
     def error(self, message, *args):
         ''' Logs error level messages. '''
         if len(args) > 0:
-            logging.error(self.hostname + ' ' + str(self.module) + ' ' + message, *args)
+            self.logger.error(self.hostname + ' ' + message, *args)
         else:
-            logging.error(self.hostname + ' ' + str(self.module) + ' ' + message)
+            self.logger.error(self.hostname + ' ' + message)
 
     def exception(self):
         ''' Logs exception messages. '''
-        logging.exception(self.hostname + ' ' + str(self.module) + ' Exception occurred!')
+        self.logger.exception(self.hostname + ' Exception occurred!')
 
     def info(self, message, *args):
         ''' Logs info level messages. '''
         if len(args) > 0:
-            logging.info(self.hostname + ' ' + str(self.module) + ' ' + message, *args)
+            self.logger.info(self.hostname + ' ' + message, *args)
         else:
-            logging.info(self.hostname + ' ' + str(self.module) + ' ' + message)
+            self.logger.info(self.hostname + ' ' + message)
 
     def warn(self, message, *args):
         ''' Logs warn level messages. '''
         if len(args) > 0:
-            logging.warn(self.hostname + ' ' + str(self.module) + ' ' + message, *args)
+            self.logger.warn(self.hostname + ' ' + message, *args)
         else:
-            logging.warn(self.hostname + ' ' + str(self.module) + ' ' + message)
+            self.logger.warn(self.hostname + ' ' + message)
 

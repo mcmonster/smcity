@@ -1,9 +1,12 @@
 ''' Model of the Tweets NoSQL table as well as variety of helper functions. '''
 
+import datetime
+import time
 import re
 
 from boto.dynamodb2.fields import AllIndex, HashKey, RangeKey
 from boto.dynamodb2.table import Table
+from threading import Thread
 
 from smcity.logging.logger import Logger
 
@@ -203,3 +206,65 @@ class TweetIterator:
     def next(self):
         return Tweet(self.result_set.next())
 
+class TweetJanitor:
+    ''' Cleans up out of data tweets. '''
+    
+    def __init__(self, config):
+        '''
+        @param config Configuration settings. Expected definitions:
+        Section:     database
+        Key:         max_tweet_age
+        Type:        int
+        Description: Max time a tweet is kept in hours
+
+        Section:     database
+        Key:         tweets_table
+        Type:        string
+        Description: Name of the Tweets model table
+        @paramType ConfigParser
+        @returns n/a
+        '''
+        self.is_shutting_down = False
+        self.max_age = config.getint('database', 'max_tweet_age')
+        self.table = Table(config.get('database', 'tweets_table'), schema=[
+            HashKey('user'), RangeKey('timestamp')
+        ])
+
+    def _maintain_tweets(self):
+        '''
+        Periodically deletes any tweets that are too old.
+
+        @returns n/a
+        '''
+        last_scan = 0
+        one_hour = 3600
+
+        while not self.is_shutting_down: # While the janitor hasn't begun the shutdown process
+            if time.time() - last_scan > one_hour: # If it's been over an hour since the last scan
+                age_limit = datetime.datetime.fromtimestamp(time.time() - self.max_age * one_hour) \
+                                             .strftime('%Y-%m-%d %H:%M:%S')
+                logger.info("Scanning with an age threshold of '%s'...", age_limit)
+
+                num_tweets_deleted = 0
+                for tweet in self.table.scan(timestamp__lt = age_limit): # Fetch all of the old tweets
+                    tweet.delete() # Delete the tweet
+                    num_tweets_deleted += 1
+                logger.info("Deleted %s old tweets!", num_tweets_deleted)
+
+                age_limit = time.time()
+
+            time.sleep(5) # Wait a bit before checking again 
+
+    def maintain_tweets(self):
+        '''
+        Spins up a thread which periodically deletes any tweets that are too old.
+
+        @returns n/a
+        '''
+        thread = Thread(target=self._maintain_tweets)
+        thread.daemon = True
+        thread.start() 
+
+    def shutdown(self):
+        ''' Shutdowns the maintenance thread. '''
+        self.is_shutting_down = True
