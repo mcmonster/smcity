@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import logging.config
+import time
+
+from ConfigParser import ConfigParser
+
+from smcity.models.tweet import TweetFactory
+from smcity.stream.twitter_stream import TwitterStreamListener
+
+logging.config.fileConfig('config/smcity.conf')
+
+# Load the config settings
+config = ConfigParser()
+configFile = open('config/smcity.conf')
+config.readfp(configFile)
+configFile.close()
+
+# Set up the stream listener and its dependencies
+tweet_factory = TweetFactory(config)
+stream_listener = TwitterStreamListener(config, tweet_factory)
+
+# Start the consumption
+stream_listener.consume_stream(-123.24, 46.97, -121.77, 47.79) # Seattle
+
+# Wait
+while True:
+    time.sleep(1)

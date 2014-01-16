@@ -108,14 +108,22 @@ class TweetFactory:
         assert int(tokens[4]) >= 0 and int(tokens[4]) < 60, "Expected valid minutes, got %r" % tokens[4]
         assert len(tokens[5]) == 2, "Expected second to be sixth token in ss format, got %r" % tokens[5]
         assert int(tokens[5]) >= 0 and int(tokens[5]) < 60, "Expected valid seconds, got %r" % tokens[5]
+       
+        # Normalize the lat/lon values
+        lat_str = str(lat)
+        while len(lat_str) < 10:
+            lat_str += '0'
+        lon_str = str(lon)
+        while len(lon_str) < 10:
+            lon_str += '0'
         
         # Create the database record
         data={
             'id' : id,
-            'lat' : lat,
-            'lat_copy' : lat,
-            'lon' : lon,
-            'lon_copy' : lon,
+            'lat' : lat_str,
+            'lat_copy' : lat_str,
+            'lon' : lon_str,
+            'lon_copy' : lon_str,
             'message' : message,
             'place' : place,
             'timestamp' : timestamp

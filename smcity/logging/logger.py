@@ -19,37 +19,37 @@ class Logger:
         self.hostname = subprocess.check_output(
             'ec2metadata --instance-id', shell=True
         ).rstrip()
-        self.logger = logging.getLogger(module)
+        self.module = module
 
     def debug(self, message, *args):
         ''' Logs debug level messages. '''
         if len(args) > 0:
-            self.logger.debug(self.hostname + ' ' + message, *args)
+            logging.debug(self.hostname + ' ' + message, *args)
         else:
-            self.logger.debug(self.hostname + ' ' + message)
+            logging.debug(self.hostname + ' ' + message)
 
     def error(self, message, *args):
         ''' Logs error level messages. '''
         if len(args) > 0:
-            self.logger.error(self.hostname + ' ' + message, *args)
+            logging.error(self.hostname + ' ' + message, *args)
         else:
-            self.logger.error(self.hostname + ' ' + message)
+            logging.error(self.hostname + ' ' + message)
 
     def exception(self):
         ''' Logs exception messages. '''
-        self.logger.exception(self.hostname + ' Exception occurred!')
+        logging.exception(self.hostname + ' Exception occurred!')
 
     def info(self, message, *args):
         ''' Logs info level messages. '''
         if len(args) > 0:
-            self.logger.info(self.hostname + ' ' + message, *args)
+            logging.info(self.hostname + ' ' + message, *args)
         else:
-            self.logger.info(self.hostname + ' ' + message)
+            logging.info(self.hostname + ' ' + message)
 
     def warn(self, message, *args):
         ''' Logs warn level messages. '''
         if len(args) > 0:
-            self.logger.warn(self.hostname + ' ' + message, *args)
+            logging.warn(self.hostname + ' ' + message, *args)
         else:
-            self.logger.warn(self.hostname + ' ' + message)
+            logging.warn(self.hostname + ' ' + message)
 

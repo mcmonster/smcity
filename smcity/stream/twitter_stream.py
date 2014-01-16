@@ -1,7 +1,10 @@
 ''' Contains the Twitter stream consuming code. '''
 
+import json
+
 from ConfigParser import ConfigParser
 from datetime import datetime
+from threading import Thread
 
 from tweepy import OAuthHandler
 from tweepy import Stream
@@ -71,7 +74,6 @@ class TwitterStreamListener(StreamListener):
             "Expected -180 <= min_lon < max_lon <= 180 got min_lon=%r, max_lon=%r" % (min_lon, max_lon)
         assert -90 <= min_lat and min_lat < max_lat and max_lat <= 90, \
             "Expected -90 <= min_lat < max_lat <= 90, got min_lat=%r, max_lat=%r" % (min_lat, max_lat)
-        assert tweet_factory is not None, "tweet_factory must not be None"
 
         self.stream.filter(locations=[min_lon, min_lat, max_lon, max_lat])
 
@@ -93,24 +95,32 @@ class TwitterStreamListener(StreamListener):
         consumer_thread.daemon = True
         consumer_thread.start()
 
-    def on_data(self, tweet):
+    def on_data(self, tweet_str):
         '''
         Triggered when a tweet is successfully consumed from the Twitter stream.
 
-        @param tweet The tweet to be handled
-        @paramType dictionary
+        @param tweet_str The tweet to be handled
+        @paramType string
         @returns n/a
         '''
-        # Extract the interesting parts of the tweet
-        id        = tweet['id_str']
-        lat       = tweet['geo']['coordinates'][0]
-        lon       = tweet['geo']['coordinates'][1]
-        message   = tweet['text']
-        place     = tweet['place']['full_name']
-        timestamp = datetime.strptime(tweet['created_at'], '%a %b %d %X +0000 %Y') \
-                            .strftime('%Y-%m-%d %X') # TODO Temp +0000
+        print 'Tweet: ' + tweet_str
+        logger.debug('Tweet: %s', tweet_str)
 
-        self.tweet_factory.create_tweet(id, message, place, timestamp, lat, lon)
+        try:
+            tweet = json.loads(tweet_str)
+
+            # Extract the interesting parts of the tweet
+            id        = tweet['id_str']
+            lat       = tweet['geo']['coordinates'][0]
+            lon       = tweet['geo']['coordinates'][1]
+            message   = tweet['text']
+            place     = tweet['place']['full_name']
+            timestamp = datetime.strptime(tweet['created_at'], '%a %b %d %X +0000 %Y') \
+                                .strftime('%Y-%m-%d %X') # TODO Temp +0000
+
+            self.tweet_factory.create_tweet(id, message, place, timestamp, lat, lon)
+        except:
+            logger.exception()
 
     def on_error(self, status):
         '''
