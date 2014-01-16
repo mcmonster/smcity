@@ -30,6 +30,9 @@ class Tweet():
     def city(self):
         return self.record['city']
 
+    def id(self):
+        return self.record['id']
+
     def lat(self):
         return self.record['lat']
 
@@ -38,9 +41,6 @@ class Tweet():
 
     def message(self):
         return self.record['message']
-
-    def user(self):
-        return self.record['user']
 
     def timestamp(self):
         return self.record['timestamp']
@@ -62,14 +62,14 @@ class TweetFactory:
         @returns n/a
         '''
         self.table = Table(config.get('database', 'tweets_table'), schema=[
-            HashKey('user'), RangeKey('timestamp')
+            HashKey('id'), RangeKey('timestamp')
         ])
 
-    def create_tweet(self, user, message, city, timestamp, lat, lon):
+    def create_tweet(self, id, message, place, timestamp, lat, lon):
         ''' 
         Creates a new Tweet using the provided data.        
 
-        @param user User who tweeted the message
+        @param id Twitter generated id of the message
         @paramType string
         @param message Tweeted message
         @paramType string
@@ -83,12 +83,12 @@ class TweetFactory:
         @paramType float
         @returns n/a
         '''
-        assert user is not None, "User must not be None!"
-        assert message is not None, "Message must not be None!"
-        assert city is not None, "City must not be None!"
-        assert timestamp is not None, "Timestamp must not be None!"
-        assert lat is not None, "Lat must not be None!"
-        assert lon is not None, "Lon must not be None!"
+        assert id is not None, "id must not be None!"
+        assert message is not None, "message must not be None!"
+        assert place is not None, "place must not be None!"
+        assert timestamp is not None, "timestamp must not be None!"
+        assert lat is not None, "lat must not be None!"
+        assert lon is not None, "lon must not be None!"
         assert (-90 <= lat) and (lat <= 90), "Expected -90 <= lat <= 90 " + \
             "but got %r" % lat
         assert (-180 <= lon) and (lon <= 180), "Expected -180 <= lon <= 180" \
@@ -111,13 +111,13 @@ class TweetFactory:
         
         # Create the database record
         data={
-            'user' : user,
-            'city' : city,
+            'id' : id,
             'lat' : lat,
             'lat_copy' : lat,
             'lon' : lon,
             'lon_copy' : lon,
             'message' : message,
+            'place' : place,
             'timestamp' : timestamp
         }
         result = self.table.put_item(data=data)
@@ -128,19 +128,15 @@ class TweetFactory:
             logger.error(message)
             raise Exception(message)
 
-    def get_tweets(self, city, age_limit=None, coordinate_box=None):
+    def get_tweets(self, age_limit=None, coordinate_box=None):
         '''
         Retrieves an iterator set to iterate over all tweets associated with provided city.
 
-        @param city City whose tweets should be fetched.
-        @paramType string
         @param coordinate_box Restricts to tweets within the specified coordinate box
         @paramType dictionary featuring the following keys: min_lon, min_lat, max_lon, max_lat
         @returns Iterator over the fetched data
         @returnType boto.dynamodb2.ResultSet
         '''
-        assert city is not None, "city must not be None!"
-
         if coordinate_box is not None: # Unroll the coordinate box
             assert 'min_lon' in coordinate_box.keys(), "Expected min_lon as key in coordinate_box"
             assert 'min_lat' in coordinate_box.keys(), "Expected min_lat as key in coordinate box"
@@ -148,14 +144,12 @@ class TweetFactory:
             assert 'max_lat' in coordinate_box.keys(), "Expected max_lat as key in coordinate box"
 
         if age_limit is None and coordinate_box is None: # If no coordinate box or age limit is specified
-            logger.debug("Scanning for records in city '%s'", city)
-            return TweetIterator(self.table.scan(city__eq=city))
+            logger.debug("Scanning for all record...")
+            return TweetIterator(self.table.scan())
         elif age_limit is None: # If a coordinate box is specified
-            logger.debug("Scanning for records in city '%s' inside coordinate box '%s'",
-                city, coordinate_box)
+            logger.debug("Scanning for records inside coordinate box '%s'", coordinate_box)
             return TweetIterator(
                 self.table.scan(
-                    city__eq=city,
                     lat__lte=coordinate_box['max_lat'],
                     lat_copy__gte=coordinate_box['min_lat'],
                     lon__lte=coordinate_box['max_lon'],
@@ -163,20 +157,15 @@ class TweetFactory:
                 )
             )
         elif coordinate_box is None: # If the age limit is specified
-            logger.debug("Scanning for records in city '%s' which are newer than %s",
-                city, age_limit)
+            logger.debug("Scanning for records which are newer than %s", age_limit)
             return TweetIterator(
-                self.table.scan(
-                    city__eq=city,
-                    timestamp__gte=age_limit
-                )
+                self.table.scan(timestamp__gte=age_limit)
             )
         else: # If both the age limit and coordinate box are specified
-            logger.debug("Scanning for records in city '%s' which are newer than %s and inside coordinate box '%s'",
-                city, age_limit, coordinate_box)
+            logger.debug("Scanning for records which are newer than %s and inside coordinate box '%s'",
+                age_limit, coordinate_box)
             return TweetIterator(
                 self.table.scan(
-                    city__eq=city,
                     lat__lte=coordinate_box['max_lat'],
                     lat_copy__gte=coordinate_box['min_lat'],
                     lon__lte=coordinate_box['max_lon'],
@@ -227,7 +216,7 @@ class TweetJanitor:
         self.is_shutting_down = False
         self.max_age = config.getint('database', 'max_tweet_age')
         self.table = Table(config.get('database', 'tweets_table'), schema=[
-            HashKey('user'), RangeKey('timestamp')
+            HashKey('id'), RangeKey('timestamp')
         ])
 
     def _maintain_tweets(self):

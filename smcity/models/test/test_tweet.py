@@ -31,13 +31,13 @@ class TestTweetFactory:
 
     def test_create_tweet(self):
         ''' Tests the create_tweet function. '''
-        # Try to pass in a missing user
+        # Try to pass in a missing id
         exception_raised = False
         try:
             self.tweet_factory.create_tweet(None, 'message', 'city', '2013-01-01 01:01:01', 0, 0)
         except:
             exception_raised = True
-        assert exception_raised, "Exception was not raised when passing missing user"
+        assert exception_raised, "Exception was not raised when passing missing id"
 
         # Try to pass in an illegal message
         exception_raised = False
@@ -53,7 +53,7 @@ class TestTweetFactory:
             self.tweet_factory.create_tweet('user', 'message', None, '2013-01-01 01:01:01', 0, 0)
         except:
             exception_raised = True
-        assert exception_raised, "Exception was not raised when passing illegal city"
+        assert exception_raised, "Exception was not raised when passing illegal place"
 
         # Try to pass in a missing timestamp
         exception_raised = False
@@ -120,12 +120,12 @@ class TestTweetFactory:
         assert exception_raised, "Exception was not raised when passing overflow lon"
         
         # Try to create a valid tweet
-        self.tweet_factory.create_tweet('user', 'message', 'city', '2013-01-01 01:01:01', 0, 0)
+        self.tweet_factory.create_tweet('id', 'message', 'city', '2013-01-01 01:01:01', 0, 0)
         
         # Verify the tweet record was created
-        record = self.table.scan(user__eq='user').next()
+        record = self.table.scan(id__eq='id').next()
         assert record is not None, "Expected record to not be None"
-        assert record['city'] == 'city', record['city']
+        assert record['place'] == 'city', record['place']
         assert record['lat'] == 0, record['lat']
         assert record['lat_copy'] == 0, record['lat_copy']
         assert record['lon'] == 0, record['lon']
@@ -133,15 +133,15 @@ class TestTweetFactory:
         assert record['message'] == 'message', record['message']
         assert record['timestamp'] == '2013-01-01 01:01:01', record['timestamp']
 
-    def test_get_tweets_whole_city(self):
-        ''' Tests retrieving all of the tweets for a city. '''
+    def test_get_tweets_all(self):
+        ''' Tests retrieving all of the tweets. '''
         logger.info('Setting up the test data...')
         self.tweet_factory.create_tweet('user1', 'message1', 'city', '2013-01-01 01:01:01', 0, 0)
         self.tweet_factory.create_tweet('user2', 'message2', 'city', '2013-01-01 01:01:01', 0, 0)
         self.tweet_factory.create_tweet('user3', 'message3', 'city', '2013-01-01 01:01:01', 0, 0)
 
         logger.info('Trying to retrieve the tweets for the whole city...')
-        tweets = self.tweet_factory.get_tweets('city')
+        tweets = self.tweet_factory.get_tweets()
 
         logger.info('Verifying that all of the messages were retrieved...')
         num_tweets = 0
@@ -152,14 +152,14 @@ class TestTweetFactory:
         assert num_tweets == 3, "Expected three tweets retrieved, got %r" % num_tweets
 
     def test_get_tweets_time_restricted(self):
-        ''' Tests retrieving all of the tweets for a city that are a certain age or newer. '''
+        ''' Tests retrieving all of the tweets that are a certain age or newer. '''
         # Set up the test data
         self.tweet_factory.create_tweet('user1', 'message1', 'city', '2013-01-01 01:01:01', 0, 0)
         self.tweet_factory.create_tweet('user2', 'message2', 'city', '2014-01-01 01:01:01', 0, 0)
         self.tweet_factory.create_tweet('user3', 'message3', 'city', '2014-01-15 01:01:01', 0, 0)
 
         # Try to retrieve the tweets
-        tweets = self.tweet_factory.get_tweets('city', age_limit='2014-01-01 01:01:01')
+        tweets = self.tweet_factory.get_tweets(age_limit='2014-01-01 01:01:01')
 
         # Verify that the expected messages were retrieved
         num_tweets = 0
@@ -180,8 +180,9 @@ class TestTweetFactory:
         self.tweet_factory.create_tweet('user6', 'message6', 'city', '2013-01-01 01:01:06', 1.5, 0.5)
      
         # Try to retrieve the tweets
-        tweets = self.tweet_factory.get_tweets('city', 
-            coordinate_box={'min_lon' : 0, 'min_lat' : 0, 'max_lon' : 1, 'max_lat' : 1})
+        tweets = self.tweet_factory.get_tweets( 
+            coordinate_box={'min_lon' : 0, 'min_lat' : 0, 'max_lon' : 1, 'max_lat' : 1}
+        )
        
         # Verify that the expected messages were retrieved
         num_tweets = 0
@@ -203,7 +204,7 @@ class TestTweetFactory:
         self.tweet_factory.create_tweet('user6', 'message6', 'city', '2013-01-01 01:01:06', 1.5, 0.5)
 
         logger.info('Trying to retrieve the tweets...')
-        tweets = self.tweet_factory.get_tweets('city', 
+        tweets = self.tweet_factory.get_tweets(
             coordinate_box={'min_lon' : 0, 'min_lat' : 0, 'max_lon' : 1, 'max_lat' : 1}, 
             age_limit='2013-01-01 01:01:02'
         )
@@ -261,5 +262,5 @@ class TestTweetJanitor:
         current_tweet = 0
         tweets = self.tweet_factory.get_tweets('city')
         for tweet in tweets:
-            assert tweet.user() == expected_tweets[current_tweet], tweet.user()
+            assert tweet.id() == expected_tweets[current_tweet], tweet.id()
             current_tweet += 1
