@@ -34,10 +34,10 @@ class Tweet():
         return self.record['id']
 
     def lat(self):
-        return self.record['lat']
+        return float(self.record['lat']) / 10000000
 
     def lon(self):
-        return self.record['lon']
+        return float(self.record['lon']) / 10000000
 
     def message(self):
         return self.record['message']
@@ -110,20 +110,16 @@ class TweetFactory:
         assert int(tokens[5]) >= 0 and int(tokens[5]) < 60, "Expected valid seconds, got %r" % tokens[5]
        
         # Normalize the lat/lon values
-        lat_str = str(lat)
-        while len(lat_str) < 10:
-            lat_str += '0'
-        lon_str = str(lon)
-        while len(lon_str) < 10:
-            lon_str += '0'
+        lat_norm = int(lat * 10000000)
+        lon_norm = int(lon * 10000000)
         
         # Create the database record
         data={
             'id' : id,
-            'lat' : lat_str,
-            'lat_copy' : lat_str,
-            'lon' : lon_str,
-            'lon_copy' : lon_str,
+            'lat' : lat_norm,
+            'lat_copy' : lat_norm,
+            'lon' : lon_norm,
+            'lon_copy' : lon_norm,
             'message' : message,
             'place' : place,
             'timestamp' : timestamp
@@ -158,10 +154,10 @@ class TweetFactory:
             logger.debug("Scanning for records inside coordinate box '%s'", coordinate_box)
             return TweetIterator(
                 self.table.scan(
-                    lat__lte=coordinate_box['max_lat'],
-                    lat_copy__gte=coordinate_box['min_lat'],
-                    lon__lte=coordinate_box['max_lon'],
-                    lon_copy__gte=coordinate_box['min_lon']
+                    lat__lte=int(coordinate_box['max_lat'] * 10000000),
+                    lat_copy__gte=int(coordinate_box['min_lat'] * 10000000),
+                    lon__lte=int(coordinate_box['max_lon'] * 10000000),
+                    lon_copy__gte=int(coordinate_box['min_lon'] * 10000000)
                 )
             )
         elif coordinate_box is None: # If the age limit is specified
@@ -174,10 +170,10 @@ class TweetFactory:
                 age_limit, coordinate_box)
             return TweetIterator(
                 self.table.scan(
-                    lat__lte=coordinate_box['max_lat'],
-                    lat_copy__gte=coordinate_box['min_lat'],
-                    lon__lte=coordinate_box['max_lon'],
-                    lon_copy__gte=coordinate_box['min_lon'],
+                    lat__lte=int(coordinate_box['max_lat'] * 10000000),
+                    lat_copy__gte=int(coordinate_box['min_lat'] * 10000000),
+                    lon__lte=int(coordinate_box['max_lon'] * 10000000),
+                    lon_copy__gte=int(coordinate_box['min_lon'] * 10000000),
                     timestamp__gte=age_limit
                 )
             )

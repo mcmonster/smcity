@@ -120,16 +120,16 @@ class TestTweetFactory:
         assert exception_raised, "Exception was not raised when passing overflow lon"
         
         # Try to create a valid tweet
-        self.tweet_factory.create_tweet('id', 'message', 'city', '2013-01-01 01:01:01', 0, 0)
+        self.tweet_factory.create_tweet('id', 'message', 'city', '2013-01-01 01:01:01', 68.8888, 121.12)
         
         # Verify the tweet record was created
         record = self.table.scan(id__eq='id').next()
         assert record is not None, "Expected record to not be None"
         assert record['place'] == 'city', record['place']
-        assert record['lat'] == 0, record['lat']
-        assert record['lat_copy'] == 0, record['lat_copy']
-        assert record['lon'] == 0, record['lon']
-        assert record['lon_copy'] == 0, record['lon_copy']
+        assert record['lat'] == 688888000, record['lat']
+        assert record['lat_copy'] == 688888000, record['lat_copy']
+        assert record['lon'] == 1211200000, record['lon']
+        assert record['lon_copy'] == 1211200000, record['lon_copy']
         assert record['message'] == 'message', record['message']
         assert record['timestamp'] == '2013-01-01 01:01:01', record['timestamp']
 
