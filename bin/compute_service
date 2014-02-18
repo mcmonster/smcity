@@ -1,0 +1,59 @@
+#!/usr/bin/python
+
+import ConfigParser
+import logging.config
+import signal
+import sys
+
+from threading import Thread
+
+# Check the command line arguments
+if len(sys.argv) != 3:
+    print "Usage: compute_service [# worker threads] [config file]"
+
+# Set up the logging configuration
+logging.config.fileConfig(sys.argv[2])
+logging.getLogger('boto').setLevel(logging.INFO)
+
+from smcity.analytics.worker import Worker
+from smcity.models.aws.aws_map_queue import AwsMapQueue
+from smcity.models.aws.aws_reduce_queue import AwsReduceQueue
+from smcity.models.tweet import TweetFactory
+
+# Load the configuration settings
+config = ConfigParser.ConfigParser()
+configFile = open(sys.argv[2])
+config.readfp(configFile)
+configFile.close()
+
+num_workers = int(sys.argv[1])
+
+# Spin up the worker threads
+workers = []
+for worker in range(num_workers):
+    # Set up the required components
+    map_queue = AwsMapQueue(config)
+    reduce_queue = AwsReduceQueue(config)
+    tweet_factory = TweetFactory(config)
+
+    # Set up the worker instance
+    worker = Worker(reduce_queue, map_queue, tweet_factory)
+    workers.append(worker)
+
+    # Set up the worker thread
+    worker_thread = Thread(target=worker.perform_tasks)
+    worker_thread.is_daemon = True
+   
+    print "Spinning up thread " + str(worker) +  "..."
+    worker_thread.start()
+
+def kill_signal_handler(signal, frame):
+    print 'Caught CTRL-C Signal. Shutting down...'
+    
+    for worker in workers:
+        worker.shutdown()
+ 
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, kill_signal_handler)
+signal.pause()
