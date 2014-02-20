@@ -103,7 +103,6 @@ class TwitterStreamListener(StreamListener):
         @paramType string
         @returns n/a
         '''
-        print 'Tweet: ' + tweet_str
         logger.debug('Tweet: %s', tweet_str)
 
         try:
@@ -131,3 +130,11 @@ class TwitterStreamListener(StreamListener):
         @returns n/a
         '''
         logger.error("Error occurred in the Twitter stream. Error Code: %s", status)
+
+    def shutdown(self):
+        '''
+        Stops all active streams.
+
+        @returns n/a
+        '''
+        self.stream.disconnect()

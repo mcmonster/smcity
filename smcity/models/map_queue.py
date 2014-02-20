@@ -25,15 +25,15 @@ class MapQueue:
         '''
         raise NotImplementedError()
 
-    def request_count_tweets(self, job_id, polygon_strategy):
+    def request_count_tweets(self, polygon_strategy):
         '''
-        Submits the requests needed to count the number of tweets in the polygon described
-        by polygon_stategy.
+        Submits the requests needed to count the number of tweets in the area described by the 
+        provides polygon strategy.
 
-        @param job_id Tracking id of the job
-        @paramType uuid/string
-        @param polygon_strategy Generates the coordinate boxes inscribing a complex polygon
+        @param polygon_strategy Describes the area of interest and how to break it down into
+        component areas
         @paramType PolygonStrategy
-        @returns n/a
+        @returns Tracking id of the job
+        @returnType string/uuid
         '''
         raise NotImplementedError()

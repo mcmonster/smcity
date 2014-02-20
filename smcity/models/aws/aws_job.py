@@ -14,15 +14,17 @@ logger = Logger(__name__)
 class AwsJob(Job):
     ''' AWS specific implementation of the Job model '''
 
-    def __init__(self, record):
+    def __init__(self, record, polygon_strategy):
         '''
         Constructor.
 
         @param record Database record describing the job's state
         @paramType DynamoDB record
+        @param polygon_strategy Strategy used to break up this job's area of interest
         @returns n/a
         '''
         assert record is not None
+        assert polygon_strategy is not None
 
         assert 'id' in record.keys()
         assert 'is_finished' in record.keys()
@@ -33,6 +35,7 @@ class AwsJob(Job):
         
         self.needs_to_be_saved = False
         self.record = record
+        self.polygon_strategy = polygon_strategy
 
     def add_result(self, coordinate_box, result):
         ''' {@inheritDocs} '''
@@ -67,7 +70,7 @@ class AwsJob(Job):
 
     def get_polygon_strategy(self):
         ''' {@inheritDocs} '''
-        return self.record['polygon_strategy']
+        return self.polygon_strategy
 
     def get_results(self):
         ''' {@inheritDocs} '''
@@ -104,7 +107,7 @@ class AwsJob(Job):
 class AwsJobFactory(JobFactory):
     ''' AWS specific implementation of the JobFactory '''
 
-    def __init__(self, config):
+    def __init__(self, config, strategy_factory):
         '''
         Constructor.
 
@@ -115,11 +118,15 @@ class AwsJobFactory(JobFactory):
         Type:    string
         Desc:    Name of the NoSQL table containing the job records
         @paramType ConfigParser
+        @param strategy_factory Interface for marshalling polygon strategies
+        @paramType PolygonStrategyFactory
         @returns n/a
         '''
         assert config is not None
+        assert strategy_factory is not None
 
         self.jobs = Table(config.get('compute_api', 'jobs_table'))
+        self.strategy_factory = strategy_factory
 
     def create_job(self, task, polygon_strategy):
         ''' {@inheritDocs} ''' 
@@ -142,8 +149,8 @@ class AwsJobFactory(JobFactory):
     def get_job(self, job_id):
         ''' {@inheritDocs} '''
         record = self.jobs.get_item(id = str(job_id))
-        
         if record is None:
             raise ReadError("Job(%s) does not exist!" % job_id)
-        else:
-            return AwsJob(record)
+        
+        polygon_strategy = self.strategy_factory.from_dict(json.loads(record['polygon_strategy']))
+        return AwsJob(record, polygon_strategy)

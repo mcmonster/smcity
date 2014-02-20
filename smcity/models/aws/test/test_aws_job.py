@@ -14,6 +14,10 @@ class MockPolygonStrategy:
     def to_dict(self):
         return self.rep
 
+class MockPolygonStrategyFactory:
+    def from_dict(self, state):
+        return state['class']
+
 class TestAwsJob:
     ''' Unit tests for the AwsJob model and factory. '''
 
@@ -26,7 +30,7 @@ class TestAwsJob:
         self.config = ConfigParser()
         self.config.add_section('compute_api')
         self.config.set('compute_api', 'jobs_table', 'test_jobs')
-        self.job_factory = AwsJobFactory(self.config)
+        self.job_factory = AwsJobFactory(self.config, MockPolygonStrategyFactory())
 
         # Empty the content of the jobs table
         for job in self.jobs.scan():
@@ -57,8 +61,7 @@ class TestAwsJob:
         job = self.job_factory.get_job(job_id)
 
         assert job.get_is_finished() == False
-        assert json.loads(job.get_polygon_strategy())['class'] == 'mock_polygon_strategy', \
-            json.loads(job.get_polygon_strategy())['class']
+        assert job.get_polygon_strategy() == 'mock_polygon_strategy', job.get_polygon_strategy()
         assert json.loads(job.get_results()) == [], json.loads(job.get_results())
         assert json.loads(job.get_run_times()) == {}, job.get_run_times()
         assert job.get_task() == 'task', job.get_task()

@@ -1,5 +1,6 @@
 ''' Units tests for the Twitter stream consumer. '''
 
+import json
 import logging
 
 from boto.dynamodb2.table import Table
@@ -36,18 +37,18 @@ class TestTwitterStreamListener():
         config.add_section('twitter')
         config.set('twitter', 'auth_file', '.twitter')
         self.tweet_factory = MockTweetFactory()
-        self.stream_listener = TwitterStreamListener(config, self.tweet_factory, -0.0001, -89, 0.0001, -88)
+        self.stream_listener = TwitterStreamListener(config, self.tweet_factory)
 
     def test_on_data(self):
         ''' Tests the on_data function. '''
         logger.info('Setting up the test tweet...')
-        tweet = {
+        tweet = json.dumps({
             'id_str' : 'id',
             'geo' : {'coordinates' : [0, 1]},
             'text' : 'text',
             'place' : {'full_name' : 'place'},
             'created_at' : 'Mon Jan 01 01:01:01 +0000 2014'
-        }
+        })
 
         logger.info('Running the on_data function...')
         self.stream_listener.on_data(tweet)

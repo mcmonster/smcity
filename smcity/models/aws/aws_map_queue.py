@@ -13,7 +13,7 @@ logger = Logger(__name__)
 class AwsMapQueue(MapQueue):
     ''' AWS specific implementation of the map queue. '''
 
-    def __init__(self, config):
+    def __init__(self, config, job_factory):
         '''
         Constructor.
  
@@ -30,8 +30,14 @@ class AwsMapQueue(MapQueue):
         Type:    string
         Desc:    name of the map queue in SQS
         @paramType ConfigParser
+        @param job_factory Interface for retrieving job records
+        @paramType JobFactory
         @returns n/a
         '''
+        assert job_factory is not None
+
+        self.job_factory = job_factory
+
         # Retrieve the map queue
         conn = boto.sqs.connect_to_region(config.get('compute_api', 'region'))
         self.queue = conn.get_queue(config.get('compute_api', 'map_queue'))
@@ -89,11 +95,13 @@ class AwsMapQueue(MapQueue):
  
         return task
 
-    def request_count_tweets(self, job_id, polygon_strategy):
+    def request_count_tweets(self, polygon_strategy):
         ''' {@inheritDocs} '''
-        assert job_id is not None
-
+        # Break the area of interest into its component lat/lon boxes
         coordinate_boxes = polygon_strategy.get_inscribed_boxes()
+
+        # Create a new job for this request
+        job_id = self.job_factory.create_job('count_tweets', polygon_strategy, len(coordinate_boxes))
 
         for coordinate_box in coordinate_boxes: # Write out each of the coordinate boxes
             message = Message() # Set up the message
@@ -105,3 +113,5 @@ class AwsMapQueue(MapQueue):
             
             result = self.queue.write(message) # Write out the request
             assert result is not None, 'Failed to push request to queue!'
+
+        return job_id

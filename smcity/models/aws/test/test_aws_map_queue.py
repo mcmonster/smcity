@@ -15,17 +15,21 @@ class MockPolygonStrategy:
     def get_inscribed_boxes(self):
         return self.coordinate_boxes
 
+class MockJobFactory:
+    def create_job(self, task, polygon_strategy, num_sub_areas):
+        self.created_job = (task, polygon_strategy, num_sub_areas)
+        return 'job_id'
+
 class TestAwsMapQueue():
     ''' Unit tests for the AwsMapQueue class. '''
 
     def setup(self):
         ''' Set up before each test. '''
-        # Set up the AwsMapQueue instance
-        config = ConfigParser.ConfigParser()
-        config.add_section('compute_api')
-        config.set('compute_api', 'region', 'us-west-2')
-        config.set('compute_api', 'map_queue', 'test_map')
-        self.task_queue = AwsMapQueue(config)
+        # Set up the instance configuration
+        self.config = ConfigParser.ConfigParser()
+        self.config.add_section('compute_api')
+        self.config.set('compute_api', 'region', 'us-west-2')
+        self.config.set('compute_api', 'map_queue', 'test_map')
 
         # Connecting to SQS
         conn = boto.sqs.connect_to_region('us-west-2')
@@ -39,6 +43,8 @@ class TestAwsMapQueue():
 
     def test_finish_task(self):
         ''' Tests the finish_task function. '''
+        map_queue = AwsMapQueue(self.config, MockJobFactory())
+
         message = Message()
         message.set_body(json.dumps({
             'job_id' : 'job_id',
@@ -46,19 +52,21 @@ class TestAwsMapQueue():
             'coordinate_box' : {'min_lat' : 0, 'min_lon' : 0, 'max_lat' : 1, 'max_lon' : 1}
         }))
         self.queue.write(message)
-        task = self.task_queue.get_task()
-        assert len(self.task_queue.in_progress_messages.keys()) == 1
+        task = map_queue.get_task()
+        assert len(map_queue.in_progress_messages.keys()) == 1
 
-        self.task_queue.finish_task(task)
-        assert len(self.task_queue.in_progress_messages.keys()) == 0
+        map_queue.finish_task(task)
+        assert len(map_queue.in_progress_messages.keys()) == 0
 
         message = self.queue.read()
         assert message is None
 
     def test_get_task(self):
         ''' Tests the get_task function. '''
+        map_queue = AwsMapQueue(self.config, MockJobFactory())
+
         # Try to retrieve a task when none are available
-        task = self.task_queue.get_task()
+        task = map_queue.get_task()
         assert task is None, task
 
         # Try to retrieve an available request
@@ -69,7 +77,7 @@ class TestAwsMapQueue():
             'coordinate_box' : {'min_lat' : 0, 'min_lon' : 0, 'max_lat' : 1, 'max_lon' : 1}
         }))
         self.queue.write(message)
-        task = self.task_queue.get_task()
+        task = map_queue.get_task()
         assert task is not None
         assert task['job_id'] == 'job_id', task['job_id']
         assert task['task'] == 'task', task['task']
@@ -81,11 +89,12 @@ class TestAwsMapQueue():
     def test_request_count_tweets(self):
         ''' Tests the request_count_tweets function. '''
         coordinate_box_1 = {'min_lat' : 0, 'min_lon' : 0, 'max_lat' : 1, 'max_lon' : 1}
-        
+        job_factory = MockJobFactory()
+        map_queue = AwsMapQueue(self.config, job_factory)      
+  
         # Make the request
-        self.task_queue.request_count_tweets(
-            'job_id', MockPolygonStrategy([coordinate_box_1])
-        )
+        strategy = MockPolygonStrategy([coordinate_box_1])
+        map_queue.request_count_tweets(strategy)
 
         # Check the results
         sqs_message = self.queue.read()
@@ -100,3 +109,8 @@ class TestAwsMapQueue():
         
         sqs_message = self.queue.read()
         assert sqs_message is None
+
+        job_task, job_strategy, job_size = job_factory.created_job
+        assert job_task == 'count_tweets', job_task
+        assert job_strategy == strategy, str(job_strategy)
+        assert job_size == 1, job_size

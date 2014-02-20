@@ -41,6 +41,13 @@ class Job:
         '''
         raise NotImplementedError()
 
+    def get_num_sub_areas(self):
+        '''
+        @returns # of sub areas we are expecting results for
+        @returnType int
+        '''
+        raise NotImplementedError()
+
     def get_polygon_strategy(self):
         '''
         @returns The polygon strategy used to break down the job's area of interest
@@ -69,13 +76,6 @@ class Job:
         '''
         raise NotImplementedError()
 
-    def results_size(self):
-        '''
-        @returns Expected final size of the results
-        @returnType int
-        '''
-        raise NotImplementedError()
-
     def save_changes(self):
         '''
         Saves changes to the underlying database record.
@@ -94,18 +94,10 @@ class Job:
         '''
         raise NotImplementedError()
 
-    def set_results_size(self, size):
-        '''
-        @param size Size of the expected result set
-        @paramType int
-        @returns n/a
-        '''
-        raise NotImplementedError()
-
 class JobFactory:
     ''' Constructs and fetches job instances. '''
 
-    def create_job(self, task, polygon_strategy):
+    def create_job(self, task, polygon_strategy, num_sub_areas):
         '''
         Creates a new job instance.
  
@@ -113,6 +105,8 @@ class JobFactory:
         @paramType string
         @param polygon_strategy Strategy used to break down the job's area of interest
         @paramType PolygonStrategy
+        @param num_sub_areas # of sub areas we will be expecting results for
+        @paramType int
         @returns Tracking id of the job
         @returnType string/uuid
         '''
