@@ -1,6 +1,6 @@
 ''' Concrete polygon strategy factory. '''
 
-from smcity.polygons.simple_grid_strategy import SimpleGridStrategy
+from smcity.polygons.simple_grid_strategy import SimpleGridStrategyFactory
 
 class PolygonStrategyFactory:
     ''' Marshalls PolygonStrategies from the serialized dictionary forms. ''' 

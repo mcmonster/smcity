@@ -1,6 +1,6 @@
 ''' Simple arbitrary resolution grid strategy. '''
 
-from smcity.polygons.polygon_strategy import PolygonStrategy
+from smcity.polygons.polygon_strategy import PolygonStrategy, PolygonStrategyFactory
 
 class SimpleGridStrategy(PolygonStrategy):
     ''' Simple arbitrary resolution grid strategy. '''
@@ -64,3 +64,7 @@ class SimpleGridStrategy(PolygonStrategy):
             'coordinate_box' : self.coordinate_box,
             'resolution' : self.resolution
         }
+
+class SimpleGridStrategyFactory(PolygonStrategyFactory):
+    def from_dict(self, state):
+        return SimpleGridStrategy(state['coordinate_box'], state['resolution'])

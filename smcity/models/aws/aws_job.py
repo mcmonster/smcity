@@ -48,6 +48,10 @@ class AwsJob(Job):
             'result' : result
         })
         self.record['results'] = json.dumps(results)
+
+        if len(results) == self.record['num_sub_areas']: # If we have received all the sub-area results
+            self.record['is_finished'] = True
+
         self.needs_to_be_saved = True
 
     def add_run_time(self, subtask, run_time):
@@ -113,7 +117,7 @@ class AwsJobFactory(JobFactory):
 
         @param config Configuration settings. Requires the following definitions:
 
-        Section: compute_api
+        Section: database
         Key:     jobs_table
         Type:    string
         Desc:    Name of the NoSQL table containing the job records
@@ -125,16 +129,20 @@ class AwsJobFactory(JobFactory):
         assert config is not None
         assert strategy_factory is not None
 
-        self.jobs = Table(config.get('compute_api', 'jobs_table'))
+        self.jobs = Table(config.get('database', 'jobs_table'))
         self.strategy_factory = strategy_factory
 
-    def create_job(self, task, polygon_strategy):
+    def create_job(self, task, polygon_strategy, num_sub_areas):
         ''' {@inheritDocs} ''' 
+        assert task is not None
+        assert num_sub_areas > 0, num_sub_areas
+
         job_id = str(uuid4())
 
         result = self.jobs.put_item(data={
             'id' : job_id,
             'is_finished' : False,
+            'num_sub_areas' : num_sub_areas,
             'polygon_strategy' : json.dumps(polygon_strategy.to_dict()),
             'results' : '[]',
             'run_times' : '{}',

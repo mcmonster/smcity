@@ -23,3 +23,15 @@ class PolygonStrategy:
         '''
         raise NotImplementedError()
 
+class PolygonStrategyFactory:
+    ''' Handles constructing and reconstructing the polygon strategy. '''
+    
+    def from_dict(self, state):
+        '''
+        Reconstructs the polygon strategy from its serialized state.
+
+        @param state Serialized state of the polygon strategy
+        @paramType dict
+        @returns PolygonStrategy
+        '''
+        raise NotImplementedError()

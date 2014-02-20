@@ -41,13 +41,6 @@ class Job:
         '''
         raise NotImplementedError()
 
-    def get_num_sub_areas(self):
-        '''
-        @returns # of sub areas we are expecting results for
-        @returnType int
-        '''
-        raise NotImplementedError()
-
     def get_polygon_strategy(self):
         '''
         @returns The polygon strategy used to break down the job's area of interest

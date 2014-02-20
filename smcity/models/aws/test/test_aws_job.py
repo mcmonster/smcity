@@ -28,8 +28,8 @@ class TestAwsJob:
         
         # Set up the AwsJobFactory instance
         self.config = ConfigParser()
-        self.config.add_section('compute_api')
-        self.config.set('compute_api', 'jobs_table', 'test_jobs')
+        self.config.add_section('database')
+        self.config.set('database', 'jobs_table', 'test_jobs')
         self.job_factory = AwsJobFactory(self.config, MockPolygonStrategyFactory())
 
         # Empty the content of the jobs table
