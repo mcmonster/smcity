@@ -34,13 +34,6 @@ class Job:
         '''
         raise NotImplementedError()
 
-    def get_is_finished(self):
-        '''
-        @returns Whether or not the job is finished
-        @returnType uuid/string
-        '''
-        raise NotImplementedError()
-
     def get_polygon_strategy(self):
         '''
         @returns The polygon strategy used to break down the job's area of interest
@@ -66,6 +59,13 @@ class Job:
         '''
         @returns Analytics task being performed on the jobs' area of interest
         @returnType string
+        '''
+        raise NotImplementedError()
+
+    def is_finished(self):
+        '''
+        @returns Whether or not the job is finished
+        @returnType uuid/string
         '''
         raise NotImplementedError()
 

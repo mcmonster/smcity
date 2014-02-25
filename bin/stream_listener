@@ -1,18 +1,29 @@
 #!/usr/bin/python
 
+import logging
 import logging.config
+import signal
+import sys
 import time
 
 from ConfigParser import ConfigParser
+from threading import Thread
+
+# Check the command line arguments
+if len(sys.argv) != 6:
+    print "Usage: stream_listener [config_file] [min_lon] [min_lat] [max_lon] [max_lat]"
+    sys.exit(-1)
+
+# Set up the logging configuration
+logging.config.fileConfig(sys.argv[1])
+logging.getLogger('boto').setLevel(logging.INFO)
 
 from smcity.models.tweet import TweetFactory
 from smcity.stream.twitter_stream import TwitterStreamListener
 
-logging.config.fileConfig('config/smcity.conf')
-
 # Load the config settings
 config = ConfigParser()
-configFile = open('config/smcity.conf')
+configFile = open(sys.argv[1])
 config.readfp(configFile)
 configFile.close()
 
@@ -20,9 +31,17 @@ configFile.close()
 tweet_factory = TweetFactory(config)
 stream_listener = TwitterStreamListener(config, tweet_factory)
 
-# Start the consumption
-stream_listener.consume_stream(-123.24, 46.97, -121.77, 47.79) # Seattle
+# Spin up the consumer thread
+args=(float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4]), float(sys.argv[5]))
+consumer_thread = Thread(target=stream_listener.consume_stream, args=args)
+consumer_thread.is_daemon = True
+consumer_thread.start()
 
-# Wait
-while True:
-    time.sleep(1)
+def kill_signal_handler(signal, frame):
+    print 'Caught CTRL-C signal. Shutting down...'
+    stream_listener.shutdown()
+
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, kill_signal_handler)
+signal.pause()

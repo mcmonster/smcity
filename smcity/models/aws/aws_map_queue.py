@@ -97,12 +97,13 @@ class AwsMapQueue(MapQueue):
 
     def request_count_tweets(self, polygon_strategy):
         ''' {@inheritDocs} '''
-        # Break the area of interest into its component lat/lon boxes
+        logger.debug("Breaking the area of interest into its component lat/lon boxes...")
         coordinate_boxes = polygon_strategy.get_inscribed_boxes()
 
-        # Create a new job for this request
+        logger.debug("Creating a new job for this request...")
         job_id = self.job_factory.create_job('count_tweets', polygon_strategy, len(coordinate_boxes))
 
+        logger.debug("Area of interest broken into %s sub-areas!" % len(coordinate_boxes))
         for coordinate_box in coordinate_boxes: # Write out each of the coordinate boxes
             message = Message() # Set up the message
             message.set_body(json.dumps({

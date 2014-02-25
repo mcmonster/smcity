@@ -44,6 +44,7 @@ class Worker():
         for tweet in self.tweet_factory.get_tweets(coordinate_box=coordinate_box):
             num_tweets += 1
 
+        logger.debug("Found %s tweets in my sub-area; Posting results..." % num_tweets)
         self.result_queue.post_count_tweets_result(job_id, coordinate_box, num_tweets)
 
     def perform_tasks(self):

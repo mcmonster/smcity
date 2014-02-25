@@ -40,8 +40,9 @@ class TestAwsJob:
         ''' Tests the create_job function. '''
         task = 'task'
         polygon_strategy = MockPolygonStrategy({'class' : 'mock_polygon_strategy'})
+        num_sub_areas = 6
 
-        job_id = self.job_factory.create_job(task, polygon_strategy)
+        job_id = self.job_factory.create_job(task, polygon_strategy, num_sub_areas)
 
         record = self.jobs.get_item(id=job_id)
         assert record['id'] == job_id, record['id']
@@ -51,19 +52,21 @@ class TestAwsJob:
         assert record['results'] == '[]', record['results']
         assert record['run_times'] == '{}', record['run_times']
         assert record['task'] == 'task', record['task']
+        assert record['num_sub_areas'] == num_sub_areas, record['num_sub_areas']
 
     def test_get_job(self):
         ''' Tests the get_job function '''
         task = 'task'
         polygon_strategy = MockPolygonStrategy({'class' : 'mock_polygon_strategy'})
+        num_sub_areas = 6
 
-        job_id = self.job_factory.create_job(task, polygon_strategy)
+        job_id = self.job_factory.create_job(task, polygon_strategy, num_sub_areas)
         job = self.job_factory.get_job(job_id)
 
-        assert job.get_is_finished() == False
+        assert job.is_finished() == False
         assert job.get_polygon_strategy() == 'mock_polygon_strategy', job.get_polygon_strategy()
-        assert json.loads(job.get_results()) == [], json.loads(job.get_results())
-        assert json.loads(job.get_run_times()) == {}, job.get_run_times()
+        assert job.get_results() == [], json.loads(job.get_results())
+        assert job.get_run_times() == {}, job.get_run_times()
         assert job.get_task() == 'task', job.get_task()
         
     def test_save_job(self):
@@ -76,7 +79,7 @@ class TestAwsJob:
         subtask = 'subtask'
         run_time = 999.9
 
-        job_id = self.job_factory.create_job(task, polygon_strategy)
+        job_id = self.job_factory.create_job(task, polygon_strategy, 6)
         job = self.job_factory.get_job(job_id)
         job.add_result(coordinate_box, result)
         job.add_run_time(subtask, run_time)

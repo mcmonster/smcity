@@ -105,7 +105,7 @@ class AwsReduceQueue(ReduceQueue):
         message.set_body(json.dumps({
             'job_id' : job_id,
             'task' : 'count_tweets',
-            'count' : count,
+            'result' : count,
             'coordinate_box' : coordinate_box
         }))
 

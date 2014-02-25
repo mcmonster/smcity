@@ -86,7 +86,7 @@ class TestResultQueue():
         message = json.loads(sqs_message.get_body())
         assert message['job_id'] == 'job_id', message['job_id']
         assert message['task'] == 'count_tweets', message['task']
-        assert message['count'] == 1337, message['count']
+        assert message['result'] == 1337, message['result']
         assert message['coordinate_box']['min_lat'] == 0, message['coordinate_box']['min_lat']
         assert message['coordinate_box']['max_lat'] == 1, message['coordinate_box']['max_lat']
         assert message['coordinate_box']['min_lon'] == 0, message['coordinate_box']['min_lon']

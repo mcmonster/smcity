@@ -1,5 +1,9 @@
 ''' Contains the Reducer service implementation '''
 
+from smcity.logging.logger import Logger
+
+logger = Logger(__name__)
+
 class Reducer:
     ''' Consumers results from the reduce queue and pushes them into NoSQL. '''
     
@@ -27,17 +31,21 @@ class Reducer:
         @returns n/a
         '''
         while not self.is_shutting_down:
-            result = self.reduce_queue.get_result()
+            try:
+                result = self.reduce_queue.get_result()
             
-            if result is None: # If there are currently no results available
-                continue
+                if result is None: # If there are currently no results available
+                    continue
 
-            job = self.job_factory.get_job(result['job_id']) # Update the jobs state
-            job.add_result(result['coordinate_box'], result['result'])
-            job.save_changes()
+                logger.debug("Found result for job %s. Posting result..." % result['job_id'])
+                job = self.job_factory.get_job(result['job_id']) # Update the jobs state
+                job.add_result(result['coordinate_box'], result['result'])
+                job.save_changes()
 
-            self.reduce_queue.finish_result(result) # Remove the result message from the queue
-        
+                self.reduce_queue.finish_result(result) # Remove the result message from the queue
+            except:
+                logger.exception()    
+    
     def shutdown(self):
         '''
         Cleanly shutdowns down the reducer.

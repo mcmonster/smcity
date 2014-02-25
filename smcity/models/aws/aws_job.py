@@ -68,25 +68,25 @@ class AwsJob(Job):
         ''' {@inheritDocs} '''
         return self.record['id']
 
-    def get_is_finished(self):
-        ''' {@inheritDocs} '''
-        return self.record['is_finished']
-
     def get_polygon_strategy(self):
         ''' {@inheritDocs} '''
         return self.polygon_strategy
 
     def get_results(self):
         ''' {@inheritDocs} '''
-        return self.record['results']
+        return json.loads(self.record['results'])
 
     def get_run_times(self):
         ''' {@inheritDocs} '''
-        return self.record['run_times']
+        return json.loads(self.record['run_times'])
 
     def get_task(self):
         ''' {@inheritDocs} '''
         return self.record['task']
+
+    def is_finished(self):
+        ''' {@inheritDocs} '''
+        return self.record['is_finished']
 
     def save_changes(self):
         ''' {@inheritDocs} '''

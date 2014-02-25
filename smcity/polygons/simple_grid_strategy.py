@@ -1,11 +1,18 @@
 ''' Simple arbitrary resolution grid strategy. '''
 
+import geojson
+
+from geojson import Feature, FeatureCollection, Polygon
+
+from smcity.logging.logger import Logger
 from smcity.polygons.polygon_strategy import PolygonStrategy, PolygonStrategyFactory
+
+logger = Logger(__name__)
 
 class SimpleGridStrategy(PolygonStrategy):
     ''' Simple arbitrary resolution grid strategy. '''
 
-    def __init__(self, coordinate_box, resolution):
+    def __init__(self, coordinate_box, resolution, style_strategy):
         '''
         Constructor. 
  
@@ -13,6 +20,8 @@ class SimpleGridStrategy(PolygonStrategy):
         @paramType dictionary with keys 'min_lat', 'max_lat', 'min_lon', 'max_lon'
         @param resolution resolution of the sub-boxes in degrees
         @paramType float
+        @param style_strategy Strategy used to stylize the polygons
+        @paramType StyleStrategy
         @returns n/a
         '''
         assert 'min_lat' in coordinate_box.keys()
@@ -20,9 +29,41 @@ class SimpleGridStrategy(PolygonStrategy):
         assert 'min_lon' in coordinate_box.keys()
         assert 'max_lon' in coordinate_box.keys()
         assert resolution > 0
+        assert style_strategy is not None
 
         self.coordinate_box = coordinate_box
         self.resolution = resolution
+        self.style_strategy = style_strategy
+
+    def encode_results_geojson(self, results):
+        '''
+        Generates GeoJSON encoded results for the grid area requested.
+
+        @param results Sub-area results to be encoded
+        @paramType List of dictionaries containing keys 'min_lat', 'min_lon', 'max_lat', 'max_lon', 'result'
+        @returns GeoJSON encoded results for the grid area
+        @returnType string/GeoJSON
+        '''
+        features = []
+
+        # Prime the style strategy
+        self.style_strategy.prep_styling(results)
+        
+        for result in results: # Encode the results as polygons
+            logger.debug(
+                "(%s, %s) : (%s %s) = %s", result['min_lon'], result['min_lat'], result['max_lon'],
+                result['max_lat'], result['result']
+            )
+            corner1 = (result['min_lon'], result['min_lat'])
+            corner2 = (result['min_lon'], result['max_lat'])
+            corner3 = (result['max_lon'], result['max_lat'])
+            corner4 = (result['max_lon'], result['min_lat'])
+
+            polygon = Polygon([[corner1, corner2, corner3, corner4, corner1]])
+            style = self.style_strategy.style_result_geojson(result)
+            features.append(Feature(geometry=polygon, properties=style))
+
+        return geojson.dumps(FeatureCollection(features))
 
     def get_inscribed_boxes(self):
         ''' {@inheritDocs} '''
@@ -62,9 +103,28 @@ class SimpleGridStrategy(PolygonStrategy):
         return {
             'class' : 'simple_grid',
             'coordinate_box' : self.coordinate_box,
-            'resolution' : self.resolution
+            'resolution' : self.resolution,
+            'style_strategy' : self.style_strategy.to_dict()
         }
 
 class SimpleGridStrategyFactory(PolygonStrategyFactory):
+    ''' Simple grid strategy implementation of the PolygonStrategyFactory. '''
+
+    def __init__(self, style_strategy_factory):
+        '''
+        Constructor.
+ 
+        @param style_strategy_factory Interface for reconstructing the style strategy associated
+        with the to be reconstructed polygon strategy
+        @paramType StyleStrategyFactory
+        @returns n/a
+        '''
+        assert style_strategy_factory is not None
+
+        self.style_strategy_factory = style_strategy_factory
+
     def from_dict(self, state):
-        return SimpleGridStrategy(state['coordinate_box'], state['resolution'])
+        return SimpleGridStrategy(
+            state['coordinate_box'], state['resolution'],
+            self.style_strategy_factory.from_dict(state['style_strategy'])
+        )

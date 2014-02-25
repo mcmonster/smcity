@@ -46,7 +46,7 @@ class AsynchResult:
         
         return self.polygon_strategy.encode_results_geojson(results)
 
-    def get_geojson_results_blocking(self, timeout=None):
+    def get_results_geojson_blocking(self, timeout=None):
         '''
         Blocking version of the get_results_geojson function.
 
@@ -74,7 +74,7 @@ class AsynchResult:
         @returns Whether or not the job is finished.
         @returnType
         '''
-        job = self.job_factory.get_job(job_id)
+        job = self.job_factory.get_job(self.job_id)
 
         return job.is_finished()
 
@@ -104,4 +104,4 @@ class AsynchResultFactory:
         @returns AsynchResult monitoring the specified job
         @returnType AsynchResult
         '''
-        return AsynchResult(job_factory, job_id, polygon_strategy)
+        return AsynchResult(self.job_factory, job_id, polygon_strategy)

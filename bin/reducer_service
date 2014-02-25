@@ -19,7 +19,9 @@ logging.getLogger('boto').setLevel(logging.INFO)
 from smcity.analytics.reducer import Reducer
 from smcity.models.aws.aws_job import AwsJobFactory
 from smcity.models.aws.aws_reduce_queue import AwsReduceQueue
-from smcity.polygons.polygon_strategy_factory import PolygonStrategyFactory
+from smcity.polygons.abstract_polygon_strategy_factory import AbstractPolygonStrategyFactory
+from smcity.styles.abstract_style_strategy_factory import AbstractStyleStrategyFactory
+from smcity.styles.color_swatch import ColorSwatchFactory
 
 # Load the configuration settings
 config = ConfigParser.ConfigParser()
@@ -28,7 +30,10 @@ config.readfp(configFile)
 configFile.close()
 
 # Set up the required components
-job_factory = AwsJobFactory(config, PolygonStrategyFactory())
+color_swatch_factory = ColorSwatchFactory()
+style_strategy_factory = AbstractStyleStrategyFactory(color_swatch_factory)
+polygon_strategy_factory = AbstractPolygonStrategyFactory(style_strategy_factory)
+job_factory = AwsJobFactory(config, polygon_strategy_factory)
 reduce_queue = AwsReduceQueue(config)
 
 # Spin up the reducer thread

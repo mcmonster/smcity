@@ -1,13 +1,20 @@
 ''' Concrete polygon strategy factory. '''
 
+from smcity.polygons.polygon_strategy import PolygonStrategyFactory
 from smcity.polygons.simple_grid_strategy import SimpleGridStrategyFactory
 
-class PolygonStrategyFactory:
+class AbstractPolygonStrategyFactory(PolygonStrategyFactory):
     ''' Marshalls PolygonStrategies from the serialized dictionary forms. ''' 
  
-    def __init__(self):
-        ''' Constructor. '''
-        self.simple_grid_factory = SimpleGridStrategyFactory()
+    def __init__(self, style_strategy_factory):
+        ''' 
+        Constructor. 
+
+        @param style_strategy_factory Interface for reconstructing style strategies
+        @paramType StyleStrategyFactory
+        @returns n/a
+        '''
+        self.simple_grid_factory = SimpleGridStrategyFactory(style_strategy_factory)
 
     def from_dict(self, state):  
         '''
